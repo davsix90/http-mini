@@ -7,6 +7,8 @@ import './App.css';
 import { ToastContainer, ToastStore } from 'react-toasts';
 // ===========================
 
+const baseURL = 'https://joes-autos.herokuapp.com';
+
 class App extends Component {
 
   constructor(props) {
@@ -30,33 +32,64 @@ class App extends Component {
   }
 
   getVehicles() {
+    axios.get(baseURL + '/api/vehicles')
+      .then((res) => {this.setState({vehiclesToDisplay: res.data})
+    })
     // axios (GET)
     // setState with response -> vehiclesToDisplay
   }
 
   getPotentialBuyers() {
+    axios.get(baseURL + '/api/buyers')
+    .then((res) => {
+      this.setState({buyersToDisplay: res.data
+      })
+  })
     // axios (GET)
     // setState with response -> buyersToDisplay
   }
 
   sellCar(id) {
+    axios.delete(baseURL + '/api/vehicles/'+id)
+    .then((res) => {this.setState({vehiclesToDisplay: res.data.vehicles})
+  })
     // axios (DELETE)
     // setState with response -> vehiclesToDisplay
   }
 
   filterByMake() {
     let make = this.refs.selectedMake.value
+    axios.get(baseURL + '/api/vehicles/?make=' + make)
+    .then((res) => {
+      console.log(res)
+       this.setState({
+         vehiclesToDisplay: res.data
+      });
+    })
     // axios (GET)
     // setState with response -> vehiclesToDisplay
   }
 
   filterByColor() {
     let color = this.refs.selectedColor.value;
+    axios.get(baseURL + '/api/vehicles/?color=' + color)
+    .then((res) => {
+      console.log(res)
+       this.setState({
+         vehiclesToDisplay: res.data
+      });
+    })
     // axios (GET)
     // setState with response -> vehiclesToDisplay
   }
 
-  updatePrice(priceChange) {
+  updatePrice(change, car) {
+    axios.put(baseURL + '/api/vehicles/'+car.id+'/'+change)
+    .then((res) => {
+      this.setState({
+        vehiclesToDisplay: res.data.vehicles
+     });
+    });
     // axios (PUT)
     // setState with response -> vehiclesToDisplay
   }
@@ -69,6 +102,12 @@ class App extends Component {
     year: this.refs.year.value,
     price: this.refs.price.value
   }  
+  axios.post(baseURL + '/api/vehicles', newCar)
+  .then((res) => {
+    this.setState({
+      vehiclesToDisplay: res.data.vehicles
+    })
+  })
   // axios (POST)
   // setState with response -> vehiclesToDisplay
 }
@@ -79,6 +118,12 @@ addBuyer() {
     phone: this.refs.phone.value,
     address: this.refs.address.value
   }
+  axios.post(baseURL + '/api/buyers', newBuyer)
+  .then((res) => {
+    this.setState({
+      buyersToDisplay: res.data.buyers
+    })
+  })
   //axios (POST)
   // setState with response -> buyersToDisplay
 }
@@ -87,11 +132,31 @@ nameSearch() {
   // axios (GET)
   // setState with response -> buyersToDisplay
   let searchLetters = this.refs.searchLetters.value;
+  axios.get(baseURL + '/api/buyers?name=' + searchLetters)
+  .then((res) => {
+     this.setState({
+       buyersToDisplay: res.data
+    });
+  })
 }
 
 byYear() {
-  let year = this.refs.year.value;
+  let year = this.refs.Year.value;
+  axios.get(baseURL + '/api/vehicles/?year=' + year)
+  .then((res) => {
+     this.setState({
+       vehiclesToDisplay: res.data
+    });
+  })
   // axios (GET)
+  // setState with response -> vehiclesToDisplay
+}
+
+notInterested(id) {
+  axios.delete(baseURL + '/api/buyers/'+id)
+  .then((res) => {this.setState({buyersToDisplay: res.data.buyers})
+})
+  // axios (DELETE)
   // setState with response -> vehiclesToDisplay
 }
 
@@ -103,11 +168,11 @@ resetData(dataToReset) {
     .then( res => {
       if (dataToReset == 'vehicles') {
         this.setState({
-          vehiclesToDisplay: res.data
+          vehiclesToDisplay: res.data.vehicles
         })
       } else {
         this.setState({
-          buyersToDisplay: res.data
+          buyersToDisplay: res.data.buyers
         })
       }
     })
@@ -116,6 +181,10 @@ resetData(dataToReset) {
 // ==============================================
 
   render() {
+    // if(!this.state.vehiclesToDisplay) {
+    //   return null;
+    // }
+    // // debugger
     const vehicles = this.state.vehiclesToDisplay.map( v => {
       return (
         <div key={ v.id }>
@@ -126,11 +195,11 @@ resetData(dataToReset) {
           <p>Price: { v.price }</p>
           <button
             className='btn btn-sp'
-            onClick={ () => this.updatePrice('up') }
+            onClick={ () => this.updatePrice('up', v) }
             >Increase Price</button>
           <button
             className='btn btn-sp'
-            onClick={ () => this.updatePrice('down') }
+            onClick={ () => this.updatePrice('down', v) }
             >Decrease Price</button>  
           <button 
             className='btn btn-sp'
@@ -147,7 +216,9 @@ resetData(dataToReset) {
           <p>Name: {person.name}</p>
           <p>Phone: {person.phone}</p>
           <p>Address: {person.address}</p>
-          <button className='btn'>No longer interested</button>
+          <button className='btn'
+          onClick={ () => this.notInterested(person.id) }
+          >No longer interested</button>
           <hr className='hr' />
         </div> 
       )
@@ -158,8 +229,12 @@ resetData(dataToReset) {
         <ToastContainer store={ ToastStore } />
         <header className='header'>
          <img src={logo} alt=""/>
-         <button className="header-btn1 btn">Reset Vehicles</button>
-         <button className='header-btn2 btn'>Reset Buyers</button>
+         <button className="header-btn1 btn"
+         onClick={ () => this.resetData('vehicles') }
+         >Reset Vehicles</button>
+         <button className='header-btn2 btn'
+         onClick={ () => this.resetData('buyers') }
+         >Reset Buyers</button>
         </header>
         <div className='btn-container'>
           <button
@@ -199,7 +274,7 @@ resetData(dataToReset) {
             type="text"
             ref='searchLetters'/>
            <input 
-            ref='year'
+            ref='Year'
             className='btn-sp'
             type='number'
             placeholder='Year'/> 
